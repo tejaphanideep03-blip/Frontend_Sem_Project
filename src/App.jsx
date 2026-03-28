@@ -301,7 +301,7 @@ function App() {
       </div>
       <footer>
         <div>
-          <h3>Arkadas</h3>
+          <h3>Team Arkadas</h3>
           <p>© 2026 Arkadas. All rights reserved.</p>
         </div>
       </footer>
