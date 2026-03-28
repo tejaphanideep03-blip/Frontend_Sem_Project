@@ -13,7 +13,10 @@ function App() {
   const [modalView, setModalView] = useState('signin');
   const [activeView, setActiveView] = useState('plans');
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('auth_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [editingSubscriptionId, setEditingSubscriptionId] = useState(null);
   const [isAnnual, setIsAnnual] = useState(false);
 
@@ -65,6 +68,8 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     setUser(null);
     setActiveView('plans');
   };

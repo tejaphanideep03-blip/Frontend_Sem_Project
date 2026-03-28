@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './LoginModal.css';
+import { login, signup } from './api/auth';
 
 const LoginModal = ({
     isOpen,
@@ -12,6 +13,8 @@ const LoginModal = ({
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
 
     React.useEffect(() => {
         if (isOpen) {
@@ -19,49 +22,41 @@ const LoginModal = ({
             setEmail('');
             setPassword('');
             setName('');
+            setErrorMsg('');
+            setIsLoading(false);
         }
     }, [initialView, isOpen]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMsg('');
         
         if (!email || !password || (view === 'signup' && !name)) {
-            alert('Please fill in all required fields.');
+            setErrorMsg('Please fill in all required fields.');
             return;
         }
 
-        // Load existing users from localStorage
-        const users = JSON.parse(localStorage.getItem('antigravity_users') || '[]');
+        setIsLoading(true);
 
-        if (view === 'signup') {
-            const userExists = users.some(u => u.email === email);
-            if (userExists) {
-                alert('An account with this email already exists. Please sign in.');
-                return;
+        try {
+            let authResponse;
+            if (view === 'signup') {
+                authResponse = await signup(name, email, password);
+            } else {
+                authResponse = await login(email, password);
             }
 
-            const newUser = { name, email, password };
-            users.push(newUser);
-            localStorage.setItem('antigravity_users', JSON.stringify(users));
+            // Store the session data in localStorage
+            localStorage.setItem('auth_token', authResponse.token);
+            localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
             
-            onLoginSuccess(newUser);
-            alert('Account created and logged in successfully!');
+            onLoginSuccess(authResponse.user);
+            alert(view === 'signup' ? 'Account created and logged in successfully!' : 'Logged in successfully!');
             onClose();
-        } else {
-            const user = users.find(u => u.email === email);
-            if (!user) {
-                alert('No account found with this email. Please sign up first.');
-                return;
-            }
-
-            if (user.password !== password) {
-                alert('Incorrect password. Please try again.');
-                return;
-            }
-
-            onLoginSuccess(user);
-            alert('Logged in successfully!');
-            onClose();
+        } catch (error) {
+            setErrorMsg(error.message || 'Authentication failed. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -128,11 +123,14 @@ const LoginModal = ({
                             required
                         />
                     </div>
+                    {errorMsg && <div className="error-message" style={{ color: '#e74c3c', fontSize: '14px', marginBottom: '10px', textAlign: 'center' }}>{errorMsg}</div>}
                     <button
                         type="submit"
                         className="btn"
+                        disabled={isLoading}
+                        style={{ opacity: isLoading ? 0.7 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
                     >
-                        {view === 'signin' ? 'Sign In' : 'Create Account'}
+                        {isLoading ? 'Please wait...' : (view === 'signin' ? 'Sign In' : 'Create Account')}
                     </button>
                 </form>
                 <div className="foot">
